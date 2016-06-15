@@ -1,16 +1,15 @@
 import os
-import SupportFunctions
 import commands
 import subprocess
 import sys
 
 class Photogrammetry:
     def __init__(self):
-        self.OPENMVG_SFM_BIN = "openMVG_Build/Linux-x86_64-RELEASE" # Indicate the openMVG binary directory
-        self.CAMERA_SENSOR_WIDTH_DIRECTORY = "openMVG_Build/openMVG/exif/sensor_width_database" # Indicate the openMVG camera sensor width directory
-        self.MVE_BIN = "mve/apps"
-        self.TEXRECON_BIN = "texrecon/build/apps/texrecon/texrecon"
-        self.supportFunctions = SupportFunctions.SupportFunctions()
+        script_path = os.path.abspath(os.path.dirname(sys.argv[0]))
+        self.OPENMVG_SFM_BIN = os.path.join(script_path, "../openMVG_Build/Linux-x86_64-RELEASE") # Indicate the openMVG binary directory
+        self.CAMERA_SENSOR_WIDTH_DIRECTORY = script_path # Indicate the openMVG camera sensor width directory
+        self.MVE_BIN = os.path.join(script_path,"../mve/apps")
+        self.TEXRECON_BIN = os.path.join(script_path,"../mvs-texturing/build/apps/texrecon/texrecon")
 
     def getSparseRecon(self, input_dir): #TODO add parameters
         matches_dir = os.path.join(input_dir, "matches")
@@ -24,7 +23,7 @@ class Photogrammetry:
         pIntrisics = subprocess.Popen( [os.path.join(self.OPENMVG_SFM_BIN, "openMVG_main_SfMInit_ImageListing"),  "-i", input_dir, "-o", matches_dir, "-d", camera_file_params] )
         pIntrisics.wait()
         print ("2. Compute features")
-        pFeatures = subprocess.Popen( [os.path.join(self.OPENMVG_SFM_BIN, "openMVG_main_ComputeFeatures"), "-pHIGH", "--numThreads="+"8", "-i", os.path.join(matches_dir, "sfm_data.json"), "-o", matches_dir, "-m", "SIFT"] )
+        pFeatures = subprocess.Popen( [os.path.join(self.OPENMVG_SFM_BIN, "openMVG_main_ComputeFeatures"), "-pULTRA", "--numThreads="+"8", "-i", os.path.join(matches_dir, "sfm_data.json"), "-o", matches_dir, "-m", "SIFT"] )
         pFeatures.wait()
         print ("3. Compute matches")
         pMatches = subprocess.Popen( [os.path.join(self.OPENMVG_SFM_BIN, "openMVG_main_ComputeMatches"),  "-i", os.path.join(matches_dir, "sfm_data.json"), "-o", matches_dir, "-g", "e"] )
@@ -36,9 +35,12 @@ class Photogrammetry:
         pRecons = subprocess.Popen( [os.path.join(self.OPENMVG_SFM_BIN, "openMVG_main_GlobalSfM"),  "-i", os.path.join(matches_dir, "sfm_data.json"), "-m", matches_dir, "-o", reconstruction_dir] )
         pRecons.wait()
         print ("5. Colorize Structure")
-        output_url = os.path.join(reconstruction_dir, "sfm_data.bin")
-        pRecons = subprocess.Popen( [os.path.join(self.OPENMVG_SFM_BIN, "openMVG_main_ComputeSfM_DataColor"),  "-i", output_url, "-o", os.path.join(reconstruction_dir,"colorized.ply")] )
+        pRecons = subprocess.Popen( [os.path.join(self.OPENMVG_SFM_BIN, "openMVG_main_ComputeSfM_DataColor"),  "-i", os.path.join(reconstruction_dir, "sfm_data.bin"), "-o", os.path.join(reconstruction_dir,"colorized.ply")] )
         pRecons.wait()
+        print ("8. Transfer to MVE format")
+        pRecons = subprocess.Popen( [os.path.join(self.OPENMVG_SFM_BIN, "openMVG_main_openMVG2MVE2"),  "-i", os.path.join(reconstruction_dir, "sfm_data.bin"), "-o", reconstruction_dir] )
+        pRecons.wait()
+        return reconstruction_dir
         """
         # optional, compute final valid structure from the known camera poses
         print ("6. Structure from Known Poses (robust triangulation)")
@@ -49,14 +51,8 @@ class Photogrammetry:
         pRecons.wait()
         print ("###!!!>>> SPARSE RECONSTRUCTION SAVED TO "+ os.path.join(reconstruction_dir, "robust_colorized.ply") +" <<<!!!###")
         """
-        return output_url
 
-    def getDenseRecon(self, input_file_path): #TODO add parameters
-        reconstruction_dir = os.path.dirname(input_file_path)
-        print ("8. Transfer to MVE format")
-        #pRecons = subprocess.Popen( [os.path.join(self.OPENMVG_SFM_BIN, "openMVG_main_openMVG2MVE2"),  "-i", reconstruction_dir+"/sfm_data.bin", "-o", reconstruction_dir] )
-        pRecons = subprocess.Popen( [os.path.join(self.OPENMVG_SFM_BIN, "openMVG_main_openMVG2MVE2"),  "-i", input_file_path, "-o", reconstruction_dir] )
-        pRecons.wait()
+    def getDenseRecon(self, reconstruction_dir): #TODO add parameters
         print ("9. Run MVE::dmrecon")
         #print os.path.join(self.MVE_BIN, "dmrecon/dmrecon"), os.path.join(reconstruction_dir, "MVE" )
         pMVErecon = subprocess.Popen([os.path.join(self.MVE_BIN, "dmrecon", "dmrecon"), "-s1", "--force", os.path.join(reconstruction_dir, "MVE")])

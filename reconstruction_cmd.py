@@ -4,10 +4,8 @@ Photogrammetry toolkit
 import argparse
 import os
 
-import SupportFunctions
 import SocketServer
-import Photogrammetry2 as Photogrammetry
-import PhotogrammetryServer
+import Photogrammetry
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog='Reconstruct a Poisson surface from photos using photogrammetry.')
