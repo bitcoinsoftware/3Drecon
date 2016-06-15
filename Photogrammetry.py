@@ -6,8 +6,8 @@ import sys
 class Photogrammetry:
     def __init__(self):
         script_path = os.path.abspath(os.path.dirname(sys.argv[0]))
-        self.OPENMVG_SFM_BIN = os.path.join(script_path, "../openMVG_Build/Linux-x86_64-RELEASE") # Indicate the openMVG binary directory
-        self.CAMERA_SENSOR_WIDTH_DIRECTORY = script_path # Indicate the openMVG camera sensor width directory
+        self.OPENMVG_SFM_BIN = os.path.join(script_path, "openMVG/openMVG_Build/Linux-x86_64-RELEASE") # Indicate the openMVG binary directory
+        self.CAMERA_SENSOR_WIDTH_DIRECTORY = os.path.join(script_path, "3Drecon") # Indicate the openMVG camera sensor width directory
         self.MVE_BIN = os.path.join(script_path,"../mve/apps")
         self.TEXRECON_BIN = os.path.join(script_path,"../mvs-texturing/build/apps/texrecon/texrecon")
 
@@ -20,8 +20,10 @@ class Photogrammetry:
         if not os.path.exists(matches_dir):
           os.mkdir(matches_dir)
         print ("1. Intrinsics analysis")
+        print os.path.join(self.OPENMVG_SFM_BIN, "openMVG_main_SfMInit_ImageListing")
         pIntrisics = subprocess.Popen( [os.path.join(self.OPENMVG_SFM_BIN, "openMVG_main_SfMInit_ImageListing"),  "-i", input_dir, "-o", matches_dir, "-d", camera_file_params] )
         pIntrisics.wait()
+        exit()
         print ("2. Compute features")
         pFeatures = subprocess.Popen( [os.path.join(self.OPENMVG_SFM_BIN, "openMVG_main_ComputeFeatures"), "-pULTRA", "--numThreads="+"8", "-i", os.path.join(matches_dir, "sfm_data.json"), "-o", matches_dir, "-m", "SIFT"] )
         pFeatures.wait()
