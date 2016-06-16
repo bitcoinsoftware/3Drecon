@@ -23,7 +23,6 @@ class Photogrammetry:
         print os.path.join(self.OPENMVG_SFM_BIN, "openMVG_main_SfMInit_ImageListing")
         pIntrisics = subprocess.Popen( [os.path.join(self.OPENMVG_SFM_BIN, "openMVG_main_SfMInit_ImageListing"),  "-i", input_dir, "-o", matches_dir, "-d", camera_file_params] )
         pIntrisics.wait()
-        exit()
         print ("2. Compute features")
         pFeatures = subprocess.Popen( [os.path.join(self.OPENMVG_SFM_BIN, "openMVG_main_ComputeFeatures"), "-pULTRA", "--numThreads="+"8", "-i", os.path.join(matches_dir, "sfm_data.json"), "-o", matches_dir, "-m", "SIFT"] )
         pFeatures.wait()
